@@ -89,8 +89,8 @@ client.on('messageCreate', async message => {
         }
     } else {
         BaseModelObject.addServer({
-            server_id: guild.id,
-            server_name: guild.name
+            id: guild.id,
+            name: guild.name
         }).addChannel({
             channel_id: channel.id,
             channel_name: channel.name
