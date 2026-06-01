@@ -1,0 +1,123 @@
+<html>
+    <head>
+        <title>Web panel</title>
+        <style>
+            body {
+                background-color: rgb(54,57,62);
+                color: white;
+                font-family: Arial, Helvetica, sans-serif;
+            }
+
+            #server-button-container {
+                display: flex;
+                flex-direction: column;
+            }
+
+            #server-display-main {
+                margin: 10px;
+                display: flex;
+                flex-direction: row;
+            }
+
+            #server-display-sidebar {
+                max-width: 250px;
+                min-width: 250px;
+                display: flex;
+                flex-direction: column;
+                margin: 10px;
+            }
+
+            #chat-history-main {
+                display: flex;
+                flex-direction: column;
+                background-color: rgb(66,69,73);
+                margin: 10px;
+                padding: 10px;
+            }
+        </style>
+        <script src="/pub/jquery.js" type="text/javascript"></script>
+    </head>
+    <body>
+        <div id="main-frame">
+            <input type="number" name="json_id_input", id="json-input">
+            <button id="load-json-button">load</button>
+            <div id="server-select-main">
+                <h3>Select server:</h3>
+                <div id="server-button-container"> <!-- container for button in first page --> </div>
+            </div>
+            <div id="server-display-main">
+                <div id="server-display-sidebar"> <!-- content --> </div>
+                <div id="chat-history-main"></div>
+            </div>
+        </div>
+        <script defer>
+            let loaded_json;
+            let current_id;
+
+            function load_json(id) {
+                if (current_id == id) {
+                    document.getElementById("server-select-main").style.display = "block"
+                    document.getElementById("server-display-main").style.display = "none"
+                    document.getElementById("server-display-sidebar").innerHTML = ""
+                    document.getElementById("chat-history-main").innerHTML = ""
+                    serverButtonCreate();
+                    return;
+                }
+
+                $.getJSON("./results/" + id + ".json", function(d) {
+                    loaded_json = d;
+                    current_id = id;
+                    //console.log(loaded_json);
+                    serverButtonCreate();
+                })
+            }
+
+            function gotoChatHistory(id) {
+                document.getElementById("server-select-main").style.display = "none";
+                document.getElementById("server-display-main").style.display = "flex";
+                document.getElementById("server-display-main").style.flexDirection = "row";
+
+                //create buttons in sidebar
+
+                let filter_server = loaded_json.servers.filter(s => s.server_id == id)
+
+                filter_server[0].channels.forEach(e => {
+                    let b = document.createElement("button");
+
+                    b.innerHTML = e.channel_name;
+                    b.onclick = () => {
+                        document.getElementById("chat-history-main").innerHTML = ""
+                        
+                        e.chat_history.forEach((msg, i) => {
+                            document.getElementById("chat-history-main").insertAdjacentHTML("beforeend",
+                                `<p><b>${msg.display_name}</b>: ${msg.stickers.size > 0 ? `<img src="${msg.stickers[0].url}" width="400" height="auto"></img>` : msg.content} --- @ ${timeConverter(msg.timestamp)}</p> ${msg.attachments.map(a => `<img src="${a.url}" width="400" height="auto"></img>`)}`
+                            )
+                        })
+                    }
+                    document.getElementById("server-display-sidebar").appendChild(b);
+                })
+            }
+
+            function serverButtonCreate() {
+                document.getElementById("server-button-container").innerHTML = ""
+                loaded_json.servers.forEach(element => {
+                    let button = document.createElement("button");
+                    button.innerHTML = element.server_name;
+                    button.onclick = () => {
+                        gotoChatHistory(element.server_id);
+                    }
+
+                    document.getElementById("server-button-container").appendChild(button);
+                });
+            }
+
+            document.getElementById("load-json-button").onclick = () => {
+                load_json(document.getElementById("json-input").value);
+            }
+
+            function timeConverter(UNIX_timestamp){
+                return new Date(UNIX_timestamp).toISOString().slice(0, 19).replace('T', ' ')
+            }
+        </script>
+    </body>
+</html>
