@@ -137,27 +137,31 @@ client.on('messageCreate', async message => {
 
 function updateConsoleDashboard(BaseModelObject) {
     process.stdout.write('\u001B[s');
-
     readline.cursorTo(process.stdout, 0, 0);
 
-    BaseModelObject.servers.forEach((server) => {
-        readline.clearLine(process.stdout, 0);
-        process.stdout.write(`${server.name}: ${server.message_count} (msg count)\n`);
-
-        server.channel_activities.forEach((channel) => {
+    if (BaseModelObject && BaseModelObject.servers) {
+        BaseModelObject.servers.forEach((server) => {
             readline.clearLine(process.stdout, 0);
-            process.stdout.write(`    L ${channel.name}: ${channel.getMessageCount()} (msg count)\n`);
+            process.stdout.write(`${server.name}: ${server.message_count} (msg count)\n`);
+
+            const targetChannels = server.channel_activities || server.channels || new Map();
+
+            targetChannels.forEach((channel) => {
+                readline.clearLine(process.stdout, 0);
+                process.stdout.write(`    L ${channel.name}: ${channel.getMessageCount ? channel.getMessageCount() : 0} (msg count)\n`);
+
+                readline.clearLine(process.stdout, 0);
+                process.stdout.write(`    |     L media_count: ${channel.media_count || 0}\n`);
+
+                const speakerCount = channel.unique_speakers ? channel.unique_speakers.size : 0;
+                readline.clearLine(process.stdout, 0);
+                process.stdout.write(`    |     L unique_speakers: ${speakerCount}\n`);
+            });
 
             readline.clearLine(process.stdout, 0);
-            process.stdout.write(`    |     L media_count: ${channel.media_count}\n`);
-
-            readline.clearLine(process.stdout, 0);
-            process.stdout.write(`    |     L unique_speakers: ${channel.unique_speakers.size}\n`);
+            process.stdout.write(`\n`);
         });
-
-        readline.clearLine(process.stdout, 0);
-        process.stdout.write(`\n`);
-    });
+    }
 
     readline.clearLine(process.stdout, 0);
     process.stdout.write(`────────────────────────────────────────────────────\n`);
@@ -181,7 +185,7 @@ if (process.stdin.isTTY) {
 process.stdin.on('keypress', async (chunk, key) => {
     if (key && key.name == 'k'){
         started = false;
-        
+
         console.log("stopped");
         console.log(BaseModelObject);
 
