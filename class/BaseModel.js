@@ -8,6 +8,7 @@ module.exports = class BaseModel {
         this.servers = new Map();
         this.server_telemetry = new Map()
         this.start_time = new Date().toISOString();
+        this.total_messages = 0;
     }
 
     /**
@@ -33,7 +34,7 @@ module.exports = class BaseModel {
      */
     addServerTelemetry(obj) {
         let server_telemetry = new ServerTelemetry(obj.id, obj.name);
-        this.server_telemetry.set(obj.id, obj.name);
+        this.server_telemetry.set(obj.id, server_telemetry);
 
         return server_telemetry;
     }
@@ -50,6 +51,13 @@ module.exports = class BaseModel {
         this.user_count.set(obj.id, user_telemetry);
 
         return user_telemetry;
+    }
+
+    /**
+     * Increment total messages
+     */
+    incrementTotalMesagesCount() {
+        this.total_messages++
     }
 
     /**
@@ -77,5 +85,13 @@ module.exports = class BaseModel {
      */
     getUserCountMap(id) {
         return this.user_count.get(id);
+    }
+
+    /**
+     * Get the total messages logged so far
+     * @returns Total messages recorded
+     */
+    getTotalMessagesCount() {
+        return this.total_messages;
     }
 }

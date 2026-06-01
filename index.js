@@ -103,21 +103,24 @@ client.on('messageCreate', async message => {
         }).incrementMessageCount()
     }
 
-    updateConsoleDashboard(BaseModelObject.server_telemetry)
+    BaseModelObject.incrementTotalMesagesCount();
+    updateConsoleDashboard(BaseModelObject)
 });
 
-function updateConsoleDashboard(telemetry_data) {
-    console.clear();
+function updateConsoleDashboard(BaseModelObject) {
+    let telemetry_data = BaseModelObject.server_telemetry;
+    console.clear()
 
-    telemetry_data.forEach((key, val) => {
-        let current_server = telemetry_data.get(key);
-        console.log(`${current_server.getMessageCount()} messages\t->\t${current_server.name}`)
-    })
+    telemetry_data.forEach((server, val) => {
+        console.log(`${server.getMessageCount()} messages\t->\t${server.name}`);
+    });
+
+    console.log(`\n\n${BaseModelObject.getTotalMessagesCount()} messages\t->\tTotal Messages`);
 }
-
 client.on('ready', async () => {
     console.log("OK");
     console.log("Press K to save");
+    console.clear();
     started = true;
 });
 
@@ -130,7 +133,7 @@ process.stdin.on('keypress', async (chunk, key) => {
         started = false;
 
         console.log("stopped");
-        console.log(BaseModelObject);
+        //console.log(BaseModelObject);
 
         const mapToArrayReplacer = (key, value) => {
             if (value instanceof Map) {
