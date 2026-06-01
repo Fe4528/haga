@@ -26,157 +26,100 @@ const client = new discord.Client({
     }
 });
 
-const expres = require("express")
-const express = new expres()
-const path = require("path")
-const fs = require("fs/promises")
+const expres = require("express");
+const express = new expres();
+const path = require("path");
+const fs = require("fs/promises");
 
 const WEBONLY = false;
 const BaseModelObject = new BaseModelClass();
 
 readline.emitKeypressEvents(process.stdin);
 
-let started = false
+let started = false;
 
 client.on('messageCreate', async message => {
     if (!message.guild || !message.member) return;
     if (!started) return;
-
-    //console.log(JSON.stringify(message.attachments))
+    if (message.webhookId) return;
+    if (message.member.user.bot) return;
 
     let guild = message.guild;
     let channel = message.channel;
-    let current_server = BaseModelObject.getServer(guild.id);
-
-    if (message.webhookId) return;
-    if (message.member.user.bot) return;
-    // prevent bots and webhooks
-
     const member = message.member;
     const user = message.author || (member ? member.user : null);
+    const current_server = BaseModelObject.getServer(guild.id);
+    const current_server_telemetry = BaseModelObject.getServerTelemetry(guild.id);
 
     const formatted_message = {
         guild_name: guild.name,
         channel_name: channel.name,
         timestamp: message.createdTimestamp,
-        attachments: message.attachments.map(att => ({
-            name: att.name,
-            url: att.url,
-            proxy_url: att.proxyURL
-        })),
-        stickers: message.stickers.map(st => ({
-            name: st.name,
-            url: st.url,
-            tags: st.tags
-        })),
+        attachments: message.attachments.map(att => ({ name: att.name, url: att.url, proxy_url: att.proxyURL })),
+        stickers: message.stickers.map(st => ({ name: st.name, url: st.url, tags: st.tags })),
         username: user ? user.globalName : "Unknown",
         nickname: member ? member.nickname : null,
         display_name: user ? user.displayName : "Unknown",
         content: message.content,
         user_id: user ? user.id : "Unknown"
     };
-    
+
+    // check first if current server exists in memory
     if (current_server) {
-        let found_channel = current_server.getChannel(channel.id);
-    
-        if (!found_channel) {
-            base.addChannel({
+        // if current server exist
+        let current_channel = current_server.getChannel(channel.id);
+        if (!current_channel) {
+            // no current channel logged in current server
+            current_server.addChannel({
                 channel_id: channel.id,
                 channel_name: channel.name
             }).insertMessageEntry(formatted_message);
         } else {
-            found_channel.insertMessageEntry(formatted_message);
+            // channel exists
+            current_channel.insertMessageEntry(formatted_message)
         }
     } else {
+        // current server does not exist in memory, so we create
         BaseModelObject.addServer({
             id: guild.id,
             name: guild.name
         }).addChannel({
             channel_id: channel.id,
             channel_name: channel.name
-        }).insertMessageEntry(formatted_message);
+        }).insertMessageEntry(formatted_message)
     }
 
-    // lelemetry part //
+    // telemetry part
+    // same logic above i guess
 
-    let server_telemetry = BaseModelObject.getServerTelemetry(guild.id);
-
-    if (!server_telemetry) {
-        server_telemetry = BaseModelObject.addServerTelemetry({ id: guild.id, name: guild.name });
+    if (current_server_telemetry) {
+        // has telemetry instance already
+        current_server_telemetry.incrementMessageCount()
+    } else {
+        // no telemetry instance found
+        BaseModelObject.addServerTelemetry({
+            id: guild.id,
+            name: guild.name
+        }).incrementMessageCount()
     }
 
-    server_telemetry.incrementMessageAndReturn();
+    updateConsoleDashboard(BaseModelObject.server_telemetry)
+});
 
-    let channel_activity = server_telemetry.getChannelActivity(channel.id);
+function updateConsoleDashboard(telemetry_data) {
+    console.clear();
 
-    if (!channel_activity) {
-        channel_activity = server_telemetry.addChannelActivityTelemetry({ id: channel.id, name: channel.name });
-    }
-
-    channel_activity.incrementMessageCountAndReturn();
-
-    if (message.attachments.size > 0 || message.embeds.length > 0 || message.stickers.size > 0) {
-        channel_activity.incrementMediaCountAndReturn();
-    }
-
-    channel_activity.tryAddUniqueSpeaker({
-        id: member.id,
-        name: member.user.username
-    });
-
-    let user_activity = server_telemetry.getUserActivity(member.id);
-
-    if (!user_activity) {
-        user_activity = server_telemetry.addUserActivityTelemetry({ id: member.id, name: member.user.username });
-    }
-
-    user_activity.incrementMessage();
-
-    updateConsoleDashboard(BaseModelObject);
-})
-
-function updateConsoleDashboard(BaseModelObject) {
-    process.stdout.write('\u001B[s');
-    readline.cursorTo(process.stdout, 0, 0);
-
-    if (BaseModelObject && BaseModelObject.servers) {
-        BaseModelObject.servers.forEach((server) => {
-            readline.clearLine(process.stdout, 0);
-            process.stdout.write(`${server.name}: ${server.message_count} (msg count)\n`);
-
-            const targetChannels = server.channel_activities || server.channels || new Map();
-
-            targetChannels.forEach((channel) => {
-                readline.clearLine(process.stdout, 0);
-                process.stdout.write(`    L ${channel.name}: ${channel.getMessageCount ? channel.getMessageCount() : 0} (msg count)\n`);
-
-                readline.clearLine(process.stdout, 0);
-                process.stdout.write(`    |     L media_count: ${channel.media_count || 0}\n`);
-
-                const speakerCount = channel.unique_speakers ? channel.unique_speakers.size : 0;
-                readline.clearLine(process.stdout, 0);
-                process.stdout.write(`    |     L unique_speakers: ${speakerCount}\n`);
-            });
-
-            readline.clearLine(process.stdout, 0);
-            process.stdout.write(`\n`);
-        });
-    }
-
-    readline.clearLine(process.stdout, 0);
-    process.stdout.write(`────────────────────────────────────────────────────\n`);
-    readline.clearLine(process.stdout, 0);
-    process.stdout.write(`LIVE GATEWAY LOG STREAM:\n`);
-
-    process.stdout.write('\u001B[u');
+    telemetry_data.forEach((key, val) => {
+        let current_server = telemetry_data.get(key);
+        console.log(`${current_server.getMessageCount()} messages\t->\t${current_server.name}`)
+    })
 }
 
 client.on('ready', async () => {
-    //client.user.setSamsungActivity('com.nexon.bluearchive', 'START');
     console.log("OK");
-    console.log("Press K to save")
+    console.log("Press K to save");
     started = true;
-})
+});
 
 if (process.stdin.isTTY) {
     process.stdin.setRawMode(true);
@@ -190,7 +133,6 @@ process.stdin.on('keypress', async (chunk, key) => {
         console.log(BaseModelObject);
 
         const mapToArrayReplacer = (key, value) => {
-
             if (value instanceof Map) {
                 return Array.from(value.values());
             }
@@ -205,16 +147,16 @@ process.stdin.on('keypress', async (chunk, key) => {
     }
 });
 
-express.use("/pub", expres.static(path.join(__dirname, 'public')))
-express.use("/results", expres.static(path.join(__dirname, 'results')))
+express.use("/pub", expres.static(path.join(__dirname, 'public')));
+express.use("/results", expres.static(path.join(__dirname, 'results')));
 
 express.get("/", (req, res) => {
     res.sendFile(__dirname + "/web.html");
-})
+});
 
 express.listen(8080, () => {
     console.log("Webserver is on");
-})
+});
 
 if (!WEBONLY) {
     client.login(config.token);

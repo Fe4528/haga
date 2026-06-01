@@ -15,7 +15,7 @@ module.exports = class BaseModel {
      * @param {Object} obj 
      * @param {string} obj.id - ID of the server
      * @param {string} obj.name - Name of the server
-     * @returns The ServerObject instance
+     * @returns {ServerObject} The ServerObject instance
      */
     addServer(obj) {
         let server_instance = new ServerObject(obj);
@@ -29,7 +29,7 @@ module.exports = class BaseModel {
      * @param {Object} obj 
      * @param {string} obj.id - ID of server
      * @param {string} obj.name - Name of server
-     * @returns The ServerTelemetry instance
+     * @returns {ServerTelemetry} The ServerTelemetry instance
      */
     addServerTelemetry(obj) {
         let server_telemetry = new ServerTelemetry(obj.id, obj.name);
@@ -43,7 +43,7 @@ module.exports = class BaseModel {
      * @param {Object} obj 
      * @param {string} obj.id - ID of user
      * @param {string} obj.name - Name of user (username)
-     * @returns The UserTelemetry instance
+     * @returns {UserTelemetry} The UserTelemetry instance
      */
     addUserTelemetry(obj) {
         let user_telemetry = new UserTelemetry(obj.id, obj.name);
@@ -64,7 +64,7 @@ module.exports = class BaseModel {
     /**
      * Get the ServerTelemetry instance
      * @param {string} id - ID of server 
-     * @returns The ServerTelemetry instance
+     * @returns {ServerTelemetry} The ServerTelemetry instance
      */
     getServerTelemetry(id) {
         return this.server_telemetry.get(id);
@@ -73,7 +73,7 @@ module.exports = class BaseModel {
     /**
      * Get the UserTelemetry instance
      * @param {string} - ID of user
-     * @returns The UserTelemetry instance
+     * @returns {UserTelemetry} The UserTelemetry instance
      */
     getUserCountMap(id) {
         return this.user_count.get(id);

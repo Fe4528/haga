@@ -57,10 +57,17 @@ module.exports = class ServerTelemetry extends BaseTelemetryObject {
     }
 
     /**
-     * Increment the count of messages sent in this server, then return the updated count
-     * @returns The updated count of messages in this server
+     * Get the message count of this server
+     * @returns The message count of this server
      */
-    incrementMessageAndReturn() {
-        return ++this.message_count;
+    getMessageCount() {
+        return this.message_count;
+    }
+
+    /**
+     * Increment the count of messages sent in this server
+     */
+    incrementMessageCount() {
+        this.message_count++;
     }
 }
