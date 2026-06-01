@@ -55,7 +55,7 @@ module.exports = class BaseModel {
     /**
      * Get the Server instance
      * @param {string} id - ID of server 
-     * @returns The Server instance
+     * @returns {ServerObject} The Server instance
      */
     getServer(id) {
         return this.servers.get(id);

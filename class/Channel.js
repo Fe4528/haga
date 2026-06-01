@@ -7,7 +7,7 @@ module.exports = class Channel {
 
     insertMessageEntry(obj) {
         this.chat_history.push(obj);
-        console.log(`(${obj.guild_name}) [${obj.user_id}] ${obj.username}: ${obj.content}`)
+        //console.log(`(${obj.guild_name}) [${obj.user_id}] ${obj.username}: ${obj.content}`)
         // pass the default Message object
     }
 }

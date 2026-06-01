@@ -33,13 +33,13 @@ module.exports = class ServerTelemetry extends BaseTelemetryObject {
      */
     addUserActivityTelemetry(obj) {
         let user_activity = new UserTelemetry(obj.id, obj.name);
-        this.user_activities.set(user_activity);
+        this.user_activities.set(obj.id, user_activity);
 
         return user_activity;
     }
 
     /**
-     * Get the ChannelActivitytelemetry instance in this server
+     * Get the ChannelActivityTelemetry instance in this server
      * @param {string} id - ID of channel 
      * @returns The ChannelActivityTelemetry instance in this server
      */

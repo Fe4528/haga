@@ -1,5 +1,4 @@
 const BaseTelemetryObject = require("./BaseTelemetryObject.js");
-const UserTelemetry = require("./UserTelemetry.js")
 
 module.exports = class ChannelActivityTelemetry extends BaseTelemetryObject {
     constructor(id, name) {
@@ -26,7 +25,7 @@ module.exports = class ChannelActivityTelemetry extends BaseTelemetryObject {
     }
 
     /**
-     * Tries to add a UserTelemetry object in this map. If the user already exists here, do not continue
+     * Tries to add a basic user object in this map. If the user already exists here, do not continue
      * @param {Object} obj
      * @param {string} obj.id - ID of the user
      * @param {string} obj.name - Name of the user 

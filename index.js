@@ -1,4 +1,4 @@
-const B_Model = require("./class/BaseModel.js");
+const BaseModelClass = require("./class/BaseModel.js");
 const readline = require("readline");
 const config = require("./config.json");
 const discord = require("discord.js-selfbot-v13");
@@ -32,7 +32,7 @@ const path = require("path")
 const fs = require("fs/promises")
 
 const WEBONLY = false;
-const BaseModelObject = new B_Model();
+const BaseModelObject = new BaseModelClass();
 
 readline.emitKeypressEvents(process.stdin);
 
@@ -46,7 +46,7 @@ client.on('messageCreate', async message => {
 
     let guild = message.guild;
     let channel = message.channel;
-    let base = BaseModelObject.getServer(guild.id);
+    let current_server = BaseModelObject.getServer(guild.id);
 
     if (message.webhookId) return;
     if (message.member.user.bot) return;
@@ -76,8 +76,8 @@ client.on('messageCreate', async message => {
         user_id: user ? user.id : "Unknown"
     };
     
-    if (base) {
-        let found_channel = base.getChannel(channel.id);
+    if (current_server) {
+        let found_channel = current_server.getChannel(channel.id);
     
         if (!found_channel) {
             base.addChannel({
@@ -96,7 +96,76 @@ client.on('messageCreate', async message => {
             channel_name: channel.name
         }).insertMessageEntry(formatted_message);
     }
+
+    // lelemetry part //
+
+    let server_telemetry = BaseModelObject.getServerTelemetry(guild.id);
+
+    if (!server_telemetry) {
+        server_telemetry = BaseModelObject.addServerTelemetry({ id: guild.id, name: guild.name });
+    }
+
+    server_telemetry.incrementMessageAndReturn();
+
+    let channel_activity = server_telemetry.getChannelActivity(channel.id);
+
+    if (!channel_activity) {
+        channel_activity = server_telemetry.addChannelActivityTelemetry({ id: channel.id, name: channel.name });
+    }
+
+    channel_activity.incrementMessageCountAndReturn();
+
+    if (message.attachments.size > 0 || message.embeds.length > 0 || message.stickers.size > 0) {
+        channel_activity.incrementMediaCountAndReturn();
+    }
+
+    channel_activity.tryAddUniqueSpeaker({
+        id: member.id,
+        name: member.user.username
+    });
+
+    let user_activity = server_telemetry.getUserActivity(member.id);
+
+    if (!user_activity) {
+        user_activity = server_telemetry.addUserActivityTelemetry({ id: member.id, name: member.user.username });
+    }
+
+    user_activity.incrementMessage();
+
+    updateConsoleDashboard(BaseModelObject);
 })
+
+function updateConsoleDashboard(BaseModelObject) {
+    process.stdout.write('\u001B[s');
+
+    readline.cursorTo(process.stdout, 0, 0);
+
+    BaseModelObject.servers.forEach((server) => {
+        readline.clearLine(process.stdout, 0);
+        process.stdout.write(`${server.name}: ${server.message_count} (msg count)\n`);
+
+        server.channel_activities.forEach((channel) => {
+            readline.clearLine(process.stdout, 0);
+            process.stdout.write(`    L ${channel.name}: ${channel.getMessageCount()} (msg count)\n`);
+
+            readline.clearLine(process.stdout, 0);
+            process.stdout.write(`    |     L media_count: ${channel.media_count}\n`);
+
+            readline.clearLine(process.stdout, 0);
+            process.stdout.write(`    |     L unique_speakers: ${channel.unique_speakers.size}\n`);
+        });
+
+        readline.clearLine(process.stdout, 0);
+        process.stdout.write(`\n`);
+    });
+
+    readline.clearLine(process.stdout, 0);
+    process.stdout.write(`────────────────────────────────────────────────────\n`);
+    readline.clearLine(process.stdout, 0);
+    process.stdout.write(`LIVE GATEWAY LOG STREAM:\n`);
+
+    process.stdout.write('\u001B[u');
+}
 
 client.on('ready', async () => {
     //client.user.setSamsungActivity('com.nexon.bluearchive', 'START');
@@ -111,11 +180,22 @@ if (process.stdin.isTTY) {
 
 process.stdin.on('keypress', async (chunk, key) => {
     if (key && key.name == 'k'){
-	started = false;
-        console.log("stopped")
-        console.log(BaseModelObject)
+        started = false;
+        
+        console.log("stopped");
+        console.log(BaseModelObject);
 
-        await fs.writeFile(`./results/${Date.now()}.json`, JSON.stringify(BaseModelObject))
+        const mapToArrayReplacer = (key, value) => {
+
+            if (value instanceof Map) {
+                return Array.from(value.values());
+            }
+            return value;
+        };
+
+        const data_to_save = JSON.stringify(BaseModelObject, mapToArrayReplacer, 4);
+
+        await fs.writeFile(`./results/${Date.now()}.json`, data_to_save);
 
         process.exit();
     }
