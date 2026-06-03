@@ -2,6 +2,7 @@ const BaseModelClass = require("./class/BaseModel.js");
 const readline = require("readline");
 const config = require("./config.json");
 const discord = require("discord.js-selfbot-v13");
+const JSONStream = require("JSONStream")
 
 const client = new discord.Client({
     patchVoiceStates: false, 
@@ -29,7 +30,8 @@ const client = new discord.Client({
 const expres = require("express");
 const express = new expres();
 const path = require("path");
-const fs = require("fs/promises");
+const fs = require("fs");
+const fs_promise = fs.promises;
 
 const WEBONLY = false;
 const BaseModelObject = new BaseModelClass();
@@ -57,7 +59,7 @@ client.on('messageCreate', async message => {
         timestamp: message.createdTimestamp,
         attachments: message.attachments.map(att => ({ name: att.name, url: att.url, proxy_url: att.proxyURL })),
         stickers: message.stickers.map(st => ({ name: st.name, url: st.url, tags: st.tags })),
-        username: user ? user.globalName : "Unknown",
+        username: user ? user.username : "Unknown",
         nickname: member ? member.nickname : null,
         display_name: user ? user.displayName : "Unknown",
         content: message.content,
@@ -71,8 +73,8 @@ client.on('messageCreate', async message => {
         if (!current_channel) {
             // no current channel logged in current server
             current_server.addChannel({
-                channel_id: channel.id,
-                channel_name: channel.name
+                id: channel.id,
+                name: channel.name
             }).insertMessageEntry(formatted_message);
         } else {
             // channel exists
@@ -84,8 +86,8 @@ client.on('messageCreate', async message => {
             id: guild.id,
             name: guild.name
         }).addChannel({
-            channel_id: channel.id,
-            channel_name: channel.name
+            id: channel.id,
+            name: channel.name
         }).insertMessageEntry(formatted_message)
     }
 
@@ -112,10 +114,10 @@ function updateConsoleDashboard(BaseModelObject) {
     console.clear()
 
     telemetry_data.forEach((server, val) => {
-        console.log(`${server.getMessageCount()} messages\t->\t${server.name}`);
+        console.log(`${server.getMessageCount()} message(s)\t->\t${server.name}`);
     });
 
-    console.log(`\n\n${BaseModelObject.getTotalMessagesCount()} messages\t->\tTotal Messages`);
+    console.log(`\n\n${BaseModelObject.getTotalMessagesCount()}\t->\tTotal Messages\n${BaseModelObject.messages_per_sec}\t->\tmsg(s)/sec`);
 }
 client.on('ready', async () => {
     console.log("OK");
@@ -129,27 +131,82 @@ if (process.stdin.isTTY) {
 }
 
 process.stdin.on('keypress', async (chunk, key) => {
-    if (key && key.name == 'k'){
+    if (key && key.name == 'k') {
+        if (!started) return;
+
         started = false;
+        console.clear();
+        console.log("Saving results...\n");
 
-        console.log("stopped");
-        //console.log(BaseModelObject);
+        const session_id = Date.now().toString();
+        const session_folder = path.join(__dirname, "results", session_id);
 
-        const mapToArrayReplacer = (key, value) => {
-            if (value instanceof Map) {
-                return Array.from(value.values());
+        if (!fs.existsSync(session_folder)) {
+            fs.mkdirSync(session_folder, { recursive: true });
+        }
+
+        const servers_array = Array.from(BaseModelObject.servers.values());
+        const total_servers = servers_array.length;
+
+        for (let s_idx = 0; s_idx < total_servers; s_idx++) {
+            const server = servers_array[s_idx];
+            
+            fs.mkdirSync(path.join(__dirname, "results", session_id, server.id), { recursive: true });
+            
+            fs.appendFileSync(
+                path.join(__dirname, "results", session_id, "servers.jsonl"), 
+                JSON.stringify({
+                    guild_name: server.name,
+                    guild_id: server.id,
+                    path: `./results/${session_id}/${server.id}/`
+                }) + "\n", 
+                "utf-8"
+            );
+
+            const channels_array = server.channels ? Array.from(server.channels.values()) : [];
+            const total_channels = channels_array.length;
+
+            for (let c_idx = 0; c_idx < total_channels; c_idx++) {
+                const channel = channels_array[c_idx];
+                const history_file_dir = path.join(__dirname, "results", session_id, server.id, channel.id, "history.jsonl");
+
+                fs.mkdirSync(path.join(__dirname, "results", session_id, server.id, channel.id), { recursive: true });
+                
+                fs.appendFileSync(
+                    path.join(__dirname, "results", session_id, server.id, "channels.jsonl"),
+                    JSON.stringify({
+                        channel_name: channel.name,
+                        channel_id: channel.id,
+                        path: `./results/${session_id}/${server.id}/${channel.id}`
+                    }) + "\n", 
+                    'utf8'
+                );
+
+                const chat_history = channel.chat_history || [];
+                const total_messages = chat_history.length;
+
+                for (let m_idx = 0; m_idx < total_messages; m_idx++) {
+                    const history_entry = chat_history[m_idx];
+                    
+                    fs.appendFileSync(history_file_dir, JSON.stringify(history_entry) + "\n", 'utf-8');
+                    readline.cursorTo(process.stdout, 0, 2); 
+
+                    readline.clearLine(process.stdout, 1);
+                    process.stdout.write(`current server: ${s_idx + 1}/${total_servers} (${server.name})\n`);
+                    
+                    readline.clearLine(process.stdout, 1);
+                    process.stdout.write(`current channel: ${c_idx + 1}/${total_channels} (${channel.name || 'Unknown Channel'})\n`);
+                    
+                    readline.clearLine(process.stdout, 1);
+                    process.stdout.write(`processing message: ${m_idx + 1}/${total_messages}\n`);
+                }
             }
-            return value;
-        };
+        }
 
-        const data_to_save = JSON.stringify(BaseModelObject, mapToArrayReplacer, 4);
-
-        await fs.writeFile(`./results/${Date.now()}.json`, data_to_save);
-
-        process.exit();
+        console.log("\n\nFinished");
+        process.exit(0);
     }
 });
-
 express.use("/pub", expres.static(path.join(__dirname, 'public')));
 express.use("/results", expres.static(path.join(__dirname, 'results')));
 

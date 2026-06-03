@@ -3,20 +3,20 @@ const Channel = require("./Channel.js");
 module.exports = class Server {
     constructor(obj) {
         this.channels = new Map();
-        this.server_id = obj.server_id;
-        this.server_name = obj.server_name;
+        this.id = obj.id;
+        this.name = obj.name;
     }
 
     /**
      * Add a channel
      * @param {Object} obj
-     * @param {string} obj.channel_id - ID of channel
-     * @param {string} obj.channel_name - Name of channel
+     * @param {string} obj.id - ID of channel
+     * @param {string} obj.name - Name of channel
      * @returns {Channel}
      */
     addChannel(obj) {
         let channel_instance = new Channel(obj);
-        this.channels.set(obj.channel_id, channel_instance);
+        this.channels.set(obj.id, channel_instance);
 
         return channel_instance;
     }

@@ -9,6 +9,13 @@ module.exports = class BaseModel {
         this.server_telemetry = new Map()
         this.start_time = new Date().toISOString();
         this.total_messages = 0;
+        this.totalmsg_last_count = 0
+        this.messages_per_sec = 0;
+
+        setInterval(() => {
+            this.messages_per_sec = this.total_messages - this.totalmsg_last_count;
+            this.totalmsg_last_count = this.total_messages;
+        }, 1000)
     }
 
     /**

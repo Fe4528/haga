@@ -1,7 +1,7 @@
 module.exports = class Channel {
     constructor(obj) {
-        this.channel_name = obj.channel_name;
-        this.channel_id = obj.channel_id;
+        this.name = obj.name;
+        this.id = obj.id;
         this.chat_history = [];
     }
 
