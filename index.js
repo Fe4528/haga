@@ -3,6 +3,7 @@ const readline = require("readline");
 const config = require("./config.json");
 const discord = require("discord.js-selfbot-v13");
 const JSONStream = require("JSONStream")
+const fs = require("fs");
 
 const client = new discord.Client({
     patchVoiceStates: false, 
@@ -27,13 +28,12 @@ const client = new discord.Client({
     }
 });
 
+/*
 const expres = require("express");
 const express = new expres();
-const path = require("path");
-const fs = require("fs");
-const fs_promise = fs.promises;
+*/
 
-const WEBONLY = false;
+const path = require("path");
 const BaseModelObject = new BaseModelClass();
 
 readline.emitKeypressEvents(process.stdin);
@@ -207,6 +207,8 @@ process.stdin.on('keypress', async (chunk, key) => {
         process.exit(0);
     }
 });
+
+/*
 express.use("/pub", expres.static(path.join(__dirname, 'public')));
 express.use("/results", expres.static(path.join(__dirname, 'results')));
 
@@ -218,6 +220,8 @@ express.listen(8080, () => {
     console.log("Webserver is on");
 });
 
-if (!WEBONLY) {
-    client.login(config.token);
-}
+web UI doesnt work anymore with the new format so don't uncomment this
+but i'll leave web.html here just for fun
+*/
+
+client.login(config.token);
