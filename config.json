@@ -1,3 +1,4 @@
 {
-  "token": "here"
+  "token": "here",
+  "port": 8080
 }
