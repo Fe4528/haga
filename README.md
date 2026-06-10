@@ -22,6 +22,9 @@ It is basically just JSON per line, like this:
 ... and more items as needed
 ```
 
+# How to view the messages?
+Make your own viewer
+
 ## servers.jsonl content:
 ```json
 {
