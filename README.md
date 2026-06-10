@@ -13,7 +13,7 @@ results (folder in the curent directory)
           └── servers.jsonl (contains basic server info)
 ```
 
-# How to install
+# How to install and run
 This project is against Discord TOS, so try at your own risk
 
 1. Download this as zip then go to the folder
