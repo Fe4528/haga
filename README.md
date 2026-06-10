@@ -29,7 +29,7 @@ This project is against Discord TOS, so try at your own risk
 # How to run again
 1. Open terminal in current folder
 2. Run `node .`
-3. Same routing for stopping, press "K" key
+3. Same routine for stopping, press "K" key
 
 # What is a JSONL file?
 It is basically just JSON per line, like this:
