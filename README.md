@@ -13,6 +13,17 @@ results (folder in the curent directory)
           └── servers.jsonl (contains basic server info)
 ```
 
+# How to install
+This project is against Discord TOS, so try at your own risk
+
+1. Download this as zip then go to the folder
+2. Open terminal and run `npm update` to install dependencies
+3. Create a folder named "results" in the current directory
+4. Get your account token
+5. Put your account token in config.json
+6. On your open terminal (when you did step 2), run `node .`
+7. To stop, press "K" key
+
 # What is a JSONL file?
 It is basically just JSON per line, like this:
 ```json
