@@ -1,4 +1,6 @@
 # Discord message scraper with web ui<br/>(with useless classes for no reason)
+svber/halosviel wanted a picture
+<img width="1238" height="784" alt="image" src="https://github.com/user-attachments/assets/5a04a796-39e6-4a94-acb6-c2c7bfce9c3f" />
 
 ## Sample structure of results folder as follows:
 
